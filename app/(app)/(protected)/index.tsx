@@ -1,13 +1,12 @@
 import { router } from "expo-router";
-import { View, TextInput } from "react-native";
+import { View, TextInput, TouchableOpacity } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
-import { H1, Muted, P } from "@/components/ui/typography";
+import { H4, Muted } from "@/components/ui/typography";
 import { useSupabase } from "@/context/supabase-provider";
 import { useEffect, useState } from "react";
 import * as Location from "expo-location";
-import { FormInput } from "@/components/ui/form";
 
 export function UserProfile() {
 	const { getProfile, toggleAvailability, upsertUsername, user, profile } = useSupabase();
@@ -130,7 +129,9 @@ export function RealTimeLocation() {
  }
   return (
    <View>
-     <Text>{text}</Text>
+			<Muted>
+				{text}
+			</Muted>
    </View>
  );
 }
@@ -140,7 +141,7 @@ export function FriendsList() {
 	const [friends, setFriends] = useState([]);
 	useEffect(() => {
 		const loadFriends = async () => {
-			if (user) {
+			if (user && location) {
 				const friendsList = await fetchAvailableFriends();
 				setFriends(friendsList);
 			}
@@ -151,13 +152,19 @@ export function FriendsList() {
 	}, [user]);
 	return (
 		<View>
-			<P>Friends List</P>
+			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+				<H4 style={{ flex: 1 }}>Friends List</H4>
+				<Button variant="icon" onPress={() => router.push("search")}>
+					<Text>➕</Text>
+				</Button>
+			</View>
 			{friends.length < 1 ? (
 				<Text>No friends available</Text>
 			) : (
 				friends.map(friend => (
-					<View key={friend.id}>
-						<Text>{friend.name} @ {friend.location}</Text>
+					<View key={friend.id} className="flex-row items-center justify-between p-2 border border-gray-200 rounded mb-2">
+						<Text className="font-bold">{friend.name}</Text>
+						<Muted>{friend.location}</Muted>
 					</View>
 				))
 			)}
@@ -165,25 +172,106 @@ export function FriendsList() {
 	);
 }
 
+export function NearestCafes() {
+  const { getNearestCafes, setUserCafeStatus } = useSupabase();
+  const [cafes, setCafes] = useState<Array<{
+    id: string;
+    name: string;
+    address: string;
+    distance: number;
+  }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [selectedCafe, setSelectedCafe] = useState<string | null>(null);
+  const [duration, setDuration] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Share location state with other components
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return;
+      }
+
+      Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 60000,
+          distanceInterval: 5
+        },
+        (newLocation) => {
+          setLocation({
+            latitude: newLocation.coords.latitude,
+            longitude: newLocation.coords.longitude
+          });
+        }
+      );
+    })();
+  }, []);
+
+  useEffect(() => {
+    const fetchCafes = async () => {
+      if (!location) return;
+      setLoading(true);
+      try {
+        const nearestCafes = await getNearestCafes(location.latitude, location.longitude);
+        setCafes(nearestCafes);
+      } catch (error) {
+        console.error('Error fetching nearest cafes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (location) {
+      fetchCafes();
+    }
+  }, [location]);
+
+  const handleStartSession = async (cafeId: string) => {
+    const { setUserCafeStatus, user } = useSupabase();
+    setIsSubmitting(true);
+    try {
+      await setUserCafeStatus(cafeId, duration);
+    } catch (error) {
+      console.error('Error starting session:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <View>
+      <H4>Nearby Cafes</H4>
+      <View className="mt-2">
+        {!location ? (
+          <Muted>Waiting for location...</Muted>
+        ) : loading && cafes.length === 0 ? (
+          <Muted>Loading cafes...</Muted>
+        ) : cafes.length === 0 ? (
+          <Muted>No cafes found nearby</Muted>
+        ) : (
+          cafes.map(cafe => (
+            <TouchableOpacity key={cafe.id} onPress={() => handleStartSession(cafe.id)} className="flex-row items-center justify-between p-2 border border-gray-200 rounded mb-2">
+              <View>
+                <Text className="font-bold">{cafe.name}</Text>
+                <Muted>{cafe.address}</Muted>
+              </View>
+              <Muted>{Math.round(cafe.distance)}m</Muted>
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function Home() {
 	return (
 		<View className="flex-1 justify-center bg-background p-4 gap-y-4">
       <UserProfile />
 			<RealTimeLocation />
+      <NearestCafes />
 			<FriendsList />
-			<H1 className="text-center">Home</H1>
-			<Muted className="text-center">
-				You are now authenticated and this session will persist even after
-				closing the app.
-			</Muted>
-			<Button
-				className="w-full"
-				variant="default"
-				size="default"
-				onPress={() => router.push("/(app)/modal")}
-			>
-				<Text>Open Modal</Text>
-			</Button>
 		</View>
 	);
 }

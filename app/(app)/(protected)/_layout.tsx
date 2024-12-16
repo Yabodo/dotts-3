@@ -25,6 +25,7 @@ export default function ProtectedLayout() {
 			}}
 		>
 			<Tabs.Screen name="index" options={{ title: "Home" }} />
+			<Tabs.Screen name="search" options={{ title: "Search" }} />
 			<Tabs.Screen name="settings" options={{ title: "Settings" }} />
 		</Tabs>
 	);

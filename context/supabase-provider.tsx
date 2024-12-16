@@ -19,6 +19,19 @@ type SupabaseContextProps = {
 	upsertUsername: (name: string) => Promise<boolean | undefined>;
 	fetchAvailableFriends: () => Promise<any[]>;
 	getProfile: () => Promise<void>;
+	searchUsers: (query: string) => Promise<any[]>;
+	addFriend: (friendId: string) => Promise<any>;
+	acceptFriend: (friendId: string) => Promise<any>;
+	removeFriend: (friendId: string) => Promise<any>;
+	fullFriendsList: () => Promise<any[]>;
+	incomingFriendRequests: () => Promise<any[]>;
+	getNearestCafes: (latitude: number, longitude: number) => Promise<Array<{
+		id: string;
+		name: string;
+		address: string;
+		distance: number;
+	}>>;
+	setUserCafeStatus: (cafeId: string, duration: number) => Promise<any>;
 };
 
 type SupabaseProviderProps = {
@@ -38,6 +51,14 @@ export const SupabaseContext = createContext<SupabaseContextProps>({
 	upsertUsername: async () => undefined,
 	fetchAvailableFriends: async () => [],
 	getProfile: async () => {},
+	searchUsers: async () => [],
+	addFriend: async () => {},
+	acceptFriend: async () => {},
+	removeFriend: async () => {},
+	fullFriendsList: async () => [],
+	incomingFriendRequests: async () => [],
+	getNearestCafes: async () => [],
+	setUserCafeStatus: async () => {},
 });
 
 export const useSupabase = () => useContext(SupabaseContext);
@@ -76,6 +97,37 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 			throw error;
 		}
 	};
+
+
+	const getNearestCafes = async (latitude: number, longitude: number) => {
+		const { data, error } = await supabase.rpc('get_nearest_cafes', {
+			latitude: latitude,
+			longitude: longitude,
+		});
+		 if (error) {
+			console.error('Error fetching nearest cafes:', error);
+			return [];
+		}
+		
+		console.log('Nearest cafes:', data);
+		return data;
+	};
+
+
+	const setUserCafeStatus = async (cafeId: string, duration: number) => {
+		const { data, error } = await supabase.rpc('set_user_cafe_status', {
+			cafe_id: cafeId,
+			duration_hours: duration
+		});
+		 if (error) {
+			console.error('Error setting user cafe status:', error);
+			return [];
+		}
+		return data;
+	};
+
+	
+	
 
 	const updatePosition = async (latitude: number, longitude: number) => {
 		const { data, error } = await supabase.rpc('update_user_location', {
@@ -197,6 +249,67 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 		}
 	};
 
+	const searchUsers = async (query: string) => {
+    const { data, error } = await supabase.rpc('search_users', { query });
+
+    if (error) {
+      console.error('Error searching users:', error);
+      return [];
+    }
+    console.log('Search results:', data);
+    return data;
+  };
+
+  const addFriend = async (friendId: string) => {
+    const { data, error } = await supabase.rpc('add_friend', { friend: friendId });
+
+    if (error) {
+      console.error('Error adding friend:', error);
+     return null;
+   }
+   console.log('Friend request sent successfully:', data);
+   return data;
+ };
+  const acceptFriend = async (friendId: string) => {
+   const { data, error } = await supabase.rpc('accept_friend', { friend: friendId });
+    if (error) {
+     console.error('Error accepting friend request:', error);
+     return null;
+   }
+   console.log('Friend request accepted successfully:', data);
+   return data;
+ };
+  const removeFriend = async (friendId: string) => {
+   const { data, error } = await supabase.rpc('remove_friend', { remove_friend_id: friendId });
+    if (error) {
+     console.error('Error removing friend:', error);
+     return null;
+   }
+   console.log('Friend removed successfully:', data);
+   return data;
+ };
+
+ const fullFriendsList = async () => {
+  const { data, error } = await supabase.rpc('full_friends_list');
+
+  if (error) {
+    console.error('Error fetching friends list:', error);
+    return [];
+  }
+  console.log('Full friends list:', data);
+  return data;
+};
+
+const incomingFriendRequests = async () => {
+	const { data, error } = await supabase.rpc('incoming_friend_requests');
+	 if (error) {
+		console.error('Error fetching incoming friend requests:', error);
+		return [];
+	}
+	console.log('Incoming friend requests:', data);
+	return data;
+};
+
 	useEffect(() => {
 		supabase.auth.getSession().then(({ data: { session } }) => {
 			setSession(session);
@@ -238,9 +351,17 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 				signInWithPassword,
 				signOut,
 				toggleAvailability,
+				getNearestCafes,
 				updatePosition,
 				fetchAvailableFriends,
 				getProfile,
+				searchUsers,
+				addFriend,
+				acceptFriend,
+				removeFriend,
+				fullFriendsList,
+				incomingFriendRequests,
+				setUserCafeStatus,
 			}}
 		>
 			{children}

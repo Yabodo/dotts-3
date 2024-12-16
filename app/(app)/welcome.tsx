@@ -18,10 +18,9 @@ export default function WelcomeScreen() {
 					source={require("@/assets/icon.png")}
 					className="w-16 h-16 rounded-xl"
 				/>
-				<H1 className="text-center">Welcome to Expo Supabase Starter</H1>
+				<H1 className="text-center">Welcome to Dotts 2.0a</H1>
 				<Muted className="text-center">
-					A comprehensive starter project for developing React Native and Expo
-					applications with Supabase as the backend.
+					An ambition attempt to bring people out of loneliness and closer together than ever before.
 				</Muted>
 			</View>
 			<View className="flex flex-col gap-y-4 web:m-4">
