@@ -167,11 +167,11 @@ export function RealTimeLocation() {
 		})();
 	}, []);
 
-	let text = "Waiting..";
+	let text = "Loading..";
 	if (errorMsg) {
 		text = errorMsg;
 	} else if (location) {
-		text = `Latitude: ${location.latitude}, Longitude: ${location.longitude}`;
+		text = "";
 	}
 
 	return (
