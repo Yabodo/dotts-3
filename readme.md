@@ -1,7 +1,5 @@
 # Dotts
 
-![social-preview-dark](https://github.com/user-attachments/assets/bcee6db2-6dd0-435f-8255-3f4b36b4cfdc)
-
 ## Introduction
 
 Dotts is a mobile application designed to combat loneliness by connecting people in real-world spaces, specifically cafes. The app helps users find and meet new friends who arelooking for social connections in their local area. Built with React Native and Expo, using Supabase as the backend, Dotts creates meaningful social interactions by matching users who are ready to meet at nearby cafes.
