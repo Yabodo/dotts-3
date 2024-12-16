@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { H4, Muted } from "@/components/ui/typography";
 import { useSupabase } from "@/context/supabase-provider";
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from "react";
 import * as Location from "expo-location";
-import debounce from 'lodash/debounce';
 
 export function UserProfile() {
 	const { getProfile, toggleAvailability, upsertUsername, user, profile, setUserCafeStatus } = useSupabase();
@@ -167,11 +166,11 @@ export function RealTimeLocation() {
 		})();
 	}, []);
 
-	let text = "Loading..";
+	let text = "Waiting..";
 	if (errorMsg) {
 		text = errorMsg;
 	} else if (location) {
-		text = "";
+		text = `Latitude: ${location.latitude}, Longitude: ${location.longitude}`;
 	}
 
 	return (
@@ -278,29 +277,6 @@ export function NearestCafes() {
 		return readyUntil > now && profile.location_id !== null;
 	};
 
-	const debouncedFetchCafes = useCallback(
-		debounce(async (loc) => {
-			if (!loc || hasActiveCafeSession()) return;
-			setLoading(true);
-			try {
-				const nearestCafes = await getNearestCafes(loc.latitude, loc.longitude);
-				setCafes(nearestCafes);
-			} catch (error) {
-				console.error('Error fetching nearest cafes:', error);
-			} finally {
-				setLoading(false);
-			}
-		}, 1000),
-		[hasActiveCafeSession]
-	);
-	
-	useEffect(() => {
-		if (location && !selectedCafe) {
-			debouncedFetchCafes(location);
-		}
-		return () => debouncedFetchCafes.cancel();
-	}, [location, selectedCafe, profile?.ready_until, profile?.location_id]);
-
 	useEffect(() => {
 		if (hasActiveCafeSession()) return;
 		(async () => {
@@ -371,9 +347,9 @@ export function NearestCafes() {
 				{!location ? (
 					<Muted>Waiting for location...</Muted>
 				) : loading && cafes.length === 0 ? (
-					<Muted>Loading cafes...</Muted>
+					<Muted>Loading locations...</Muted>
 				) : cafes.length === 0 ? (
-					<Muted>No cafes found nearby</Muted>
+					<Muted>No public locations found nearby</Muted>
 				) : (
 					cafes.map(cafe => (
 						<TouchableOpacity
@@ -400,80 +376,92 @@ export default function Home() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [location, setLocation] = useState(null);
   const { profile, user, getProfile } = useSupabase();
+
   useEffect(() => {
-   const checkLocationPermission = async () => {
-     try {
-       let { status } = await Location.requestForegroundPermissionsAsync();
-       setIsLocationGranted(status === "granted");
-       
-       if (status === "granted") {
-         const initialLocation = await Location.getCurrentPositionAsync({
-           accuracy: Location.Accuracy.High
-         });
-         setLocation(initialLocation.coords);
+    const checkLocationPermission = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('Location permission status:', status);
+        setIsLocationGranted(status === "granted");
+        
+        if (status === "granted") {
           const subscription = await Location.watchPositionAsync(
-           {
-             accuracy: Location.Accuracy.High,
-             timeInterval: 60000,
-             distanceInterval: 5
-           },
-           (newLocation) => {
-             setLocation(prev => {
-               if (!prev || 
-                   prev.latitude !== newLocation.coords.latitude || 
-                   prev.longitude !== newLocation.coords.longitude) {
-                 return newLocation.coords;
-               }
-               return prev;
-             });
-           }
-         );
-         return () => subscription.remove();
-       }
-     } catch (error) {
-       console.error('Error checking location permission:', error);
-     }
-   };
-   checkLocationPermission();
- }, []);
+            {
+              accuracy: Location.Accuracy.High,
+              timeInterval: 60000,
+              distanceInterval: 5
+            },
+            (newLocation) => {
+              console.log('New location received:', newLocation);
+              setLocation(newLocation.coords);
+            }
+          );
+          return () => subscription.remove();
+        }
+      } catch (error) {
+        console.error('Error checking location permission:', error);
+      }
+    };
+    checkLocationPermission();
+  }, []);
+
   useEffect(() => {
-   const loadProfile = async () => {
-     if (user) {
-       await getProfile();
-     }
-   };
-   loadProfile();
- }, [user]);
+    const loadProfile = async () => {
+      if (user) {
+        console.log('Loading profile for user:', user.id);
+        await getProfile();
+      }
+    };
+    loadProfile();
+  }, [user]);
+
+  const isAppReady = () => {
+    console.log('Checking app ready:', { profile, location, user });
+    if (!user) return false;
+    if (!profile) return false;
+    
+    const hasActiveCafeSession = () => {
+      if (!profile.ready_until) return false;
+      const now = new Date();
+      const readyUntil = new Date(profile.ready_until);
+      return readyUntil > now;
+    };
+    return location !== null || hasActiveCafeSession();
+  };
+
   useEffect(() => {
-   if (isInitialLoad && user && profile && location) {
-     console.log('App is ready, ending initial load');
-     setIsInitialLoad(false);
-   }
- }, [location, profile, user, isInitialLoad]);
-  if (isInitialLoad || !location || !profile || !user) {
-   return (
-     <View className="flex-1 justify-center items-center bg-background">
-       <ActivityIndicator size="large" />
-       <Text className="mt-4">Loading Dotts...</Text>
-     </View>
-   );
- }
+    if (isAppReady()) {
+      console.log('App is ready, ending initial load');
+      setIsInitialLoad(false);
+    }
+  }, [location, profile, user]);
+
+  if (isInitialLoad) {
+    return (
+      <View className="flex-1 justify-center items-center bg-background">
+        <ActivityIndicator size="large" />
+        <Text className="mt-4">Loading Dotts...</Text>
+      </View>
+    );
+  }
+
   if (!isLocationGranted) {
-   return (
-     <View className="flex-1 justify-center items-center bg-background p-4">
-       <Text className="text-center mb-2">Location Permission Required</Text>
-       <Muted className="text-center">
-         Dotts needs location access to show you nearby cafes and friends.
-       </Muted>
-     </View>
-   );
- }
+    return (
+      <View className="flex-1 justify-center items-center bg-background p-4">
+        <Text className="text-center mb-2">Location Permission Required</Text>
+        <Muted className="text-center">
+          Dotts needs location access to show you nearby locations and friends.
+        </Muted>
+      </View>
+    );
+  }
+
   return (
-   <View className="flex-1 justify-center bg-background p-4 gap-y-4">
-     <UserProfile />
-     <RealTimeLocation />
-     <NearestCafes />
-     <FriendsList />
-   </View>
- );
+    <View className="flex-1 justify-center bg-background p-4 gap-y-4">
+      <UserProfile />
+      <RealTimeLocation />
+      <NearestCafes />
+      <FriendsList />
+    </View>
+  );
 }
