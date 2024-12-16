@@ -1,39 +1,78 @@
 # 💻 Application Overview
 
-The application is pretty simple. Users can sign up, sign in, and sign out.
+Dotts is a social connection platform that helps combat loneliness by facilitating real-world meetups at cafes. Users can:
 
-## Get Started
+- Sign up and create a profile
+- Set their availability status for meetups
+- Find and connect with potential friends
+- Discover nearby cafes
+- Coordinate meetups with matched friends
+- Manage friend requests and connections
 
-To set up this starter template, please follow these steps:
+## Getting Started
+
+To set up Dotts locally, follow these steps:
 
 1. Configure Supabase:
 
-- If you haven't already, create an new account on [Supabase](https://supabase.com/).
-- Create a new project and obtain your Supabase URL and API key.
-- Update the `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_API_KEY` variables in the `.env` file with your Supabase URL and API key respectively.
+- Create a new account on [Supabase](https://supabase.com/)
+- Create a new project and obtain your Supabase URL and API keyO_PUBLIC_API_URL` and `EXPO_PUBLIC_API_KEY` variables in the `.env` file
 
-Note: By default Supabase Auth requires email verification before a session is created for the users. To support email verification you need to implement deep link handling! Alternatively, you can disable email confirmation in your project's email auth provider settings.
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/dotts.git
+   cd dotts
+   ```
 
-2. Clone the repository to your local machine:
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-git clone https://github.com/FlemingVincent/expo-supabase-starter.git
-```
+4. Set up environment variables:
+   - Copy `.env.example` to `.env`
+   - Fill in your Supabase credentials and other required variables
 
-3. Navigate to the project directory:
+5. Start the development server:
+   ```bash
+   npm start
+   ```
 
-```bash
-cd expo-supabase-starter
-```
+## Tech Stack
 
-4. Install the required dependencies:
+- **Frontend**: React Native with Expo
+- **Backend**: Supabase
+- **Authentication**: Supabase Auth
+- **Database**: PostgreSQL (via Supabase)
+- **Location Services**: Google Maps API
+- **State Management**: React Context API
 
-```bash
-yarn install
-```
+## Project Structure
 
-5. Start the Expo development server:
+dotts/
+├── src/
+│ ├── components/ # Reusable UI components
+│ ├── screens/ # Screen components
+│ ├── navigation/ # Navigation configuration
+│ ├── services/ # API and external service integrations
+│ ├── hooks/ # Custom React hooks
+│ ├── utils/ # Helper functions and utilities
+│ └── constants/ # App-wide constants
+├── assets/ # Images, fonts, and other static files
+└── docs/ # Project documentation
 
-```bash
-yarn start
-```
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the Proprietary License. All rights reserved. Unauthorized copying, distribution, or modification of this project is strictly prohibited.
+
+## Support
+
+For support, please open an issue in the GitHub repository or contact the development team at Github - Yabodo.

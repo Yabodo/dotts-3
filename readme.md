@@ -1,27 +1,24 @@
-# Expo Supabase Starter
+# Dotts
 
 ![social-preview-dark](https://github.com/user-attachments/assets/bcee6db2-6dd0-435f-8255-3f4b36b4cfdc)
 
 ## Introduction
 
-This repository serves as a comprehensive starter project for developing React Native and Expo applications with Supabase as the backend. It integrates various technologies such as Expo Router for navigation, Tailwind CSS for styling, React-Hook-Form for form handling, Zod for schema validation, and TypeScript for type safety. By leveraging these powerful tools, this starter template provides a robust foundation for building modern, scalable, and efficient mobile applications.
-
-#### Disclaimer
-
-This is not supposed to be a template, boilerplate or a framework. It is an opinionated guide that shows how to do some things in a certain way. You are not forced to do everything exactly as it is shown here, decide what works best for you and your team and stay consistent with your style.
-
+Dotts is a mobile application designed to combat loneliness by connecting people in real-world spaces, specifically cafes. The app helps users find and meet new friends who arelooking for social connections in their local area. Built with React Native and Expo, using Supabase as the backend, Dotts creates meaningful social interactions by matching users who are ready to meet at nearby cafes.
+#### Key Features
+- Real-time location-based friend finding
+ Cafe discovery and meetup coordination
+ Friend request system
+ User availability status
+ Secure authentication
+ Cross-platform support (iOS & Android)
 ## Table of Contents
-
-- [💻 Application Overview](docs/application-overview.md)
-- [⚙️ Project Configuration](docs/project-configuration.md)
-- [🗄️ Project Structure](docs/project-structure.md)
-- [🧱 Components And Styling](docs/components-and-styling.md)
-- [🗃️ State Management](docs/state-management.md)
-
+- [� Application Overview](docs/application-overview.md)
+ [⚙️ Project Configuration](docs/project-configuration.md)
+ [🗄️ Project Structure](docs/project-structure.md)
+ [🧱 Components And Styling](docs/components-and-styling.md)
+ [🗃️ State Management](docs/state-management.md)
 ## Contributing
-
-Contributions to this starter project are highly encouraged and welcome! If you have any suggestions, bug reports, or feature requests, please feel free to create an issue or submit a pull request. Let's work together to enhance the developer experience and make it easier for everyone to build exceptional Expo applications with Supabase.
-
+Contributions to Dotts are welcome! Whether it's bug fixes, feature additions, or documentation improvements, your help in making social connections easier is appreciated. Please feel free to create issues or submit pull requests.
 ## License
-
-This repository is licensed under the MIT License. You are granted the freedom to use, modify, and distribute the code for personal or commercial purposes. For more details, please refer to the [LICENSE](https://github.com/FlemingVincent/supabase-starter/blob/main/LICENSE) file.
+This project is licensed under the Proprietary License. All rights reserved. Unauthorized copying, distribution, or modification of this project is strictly prohibited.
