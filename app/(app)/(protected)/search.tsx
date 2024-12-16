@@ -10,6 +10,7 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+	const [hasSearched, setHasSearched] = useState(false);
   const [friends, setFriends] = useState<any[]>([]);
 	const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
 
@@ -31,6 +32,7 @@ export default function SearchScreen() {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
+		setHasSearched(true);
     setIsSearching(true);
     try {
       const results = await searchUsers(searchQuery.trim());
@@ -115,9 +117,9 @@ export default function SearchScreen() {
 			</View>
 		))}
 	</View>
-) : searchQuery ? (
+) : hasSearched ? (
 	<View className="mb-4">
-		<Muted className="text-center">No users found</Muted>
+		<Muted className="text-center">No users found!</Muted>
 	</View>
 ) : null}
       {(incomingRequests.length > 0 || friends.filter(f => f.status === 'pending').length > 0) && (
