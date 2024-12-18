@@ -14,6 +14,20 @@ export function UserProfile() {
 	const [isEditing, setIsEditing] = useState(false);
 	const [newUsername, setNewUsername] = useState(profile?.name || "");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+	useEffect(() => {
+		if (!profile?.ready_until) return;
+		
+		const updateTimeLeft = () => {
+			const remaining = calculateTimeLeft();
+			setTimeLeft(remaining);
+		};
+			updateTimeLeft(); // Initial calculation
+		const intervalId = setInterval(updateTimeLeft, 1000); // Update every second
+		
+		return () => clearInterval(intervalId);
+	}, [profile?.ready_until]);
 
 	useEffect(() => {
 		const loadProfile = async () => {
@@ -128,7 +142,7 @@ export function UserProfile() {
 				{isReady ? (
 					profile.cafes?.name ? (
 						<Text onPress={handleClearCafe}>
-							{` My friends can find me at ${profile.cafes.name} for the next ${calculateTimeLeft()} minutes!`}
+							{` My friends can find me at ${profile.cafes.name} for the next ${timeLeft} minutes!`}
 						</Text>
 					) : (
 						<Text>
@@ -416,7 +430,6 @@ export default function Home() {
   }, [user]);
 
   const isAppReady = () => {
-    console.log('Checking app ready:', { profile, location, user });
     if (!user) return false;
     if (!profile) return false;
     
@@ -431,7 +444,6 @@ export default function Home() {
 
   useEffect(() => {
     if (isAppReady()) {
-      console.log('App is ready, ending initial load');
       setIsInitialLoad(false);
     }
   }, [location, profile, user]);

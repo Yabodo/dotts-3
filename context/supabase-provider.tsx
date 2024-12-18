@@ -1,7 +1,7 @@
 import { Session, User } from "@supabase/supabase-js";
 import { useRouter, useSegments, SplashScreen } from "expo-router";
-import { createContext, useContext, useEffect, useState } from "react";
-
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { throttle } from 'lodash';
 import { supabase } from "@/config/supabase";
 
 SplashScreen.preventAutoHideAsync();
@@ -115,17 +115,24 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 	};
 
 
-	const getNearestCafes = async (latitude: number, longitude: number) => {
+
+	const getNearestCafesBase = async (latitude: number, longitude: number) => {
+		console.log("get_nearest_cafes");
 		const { data, error } = await supabase.rpc('get_nearest_cafes', {
 			latitude: latitude,
 			longitude: longitude,
 		});
-		 if (error) {
+		if (error) {
 			console.error('Error fetching nearest cafes:', error);
 			return [];
 		}
 		return data;
 	};
+	 // Throttle to maximum one call per second
+	const getNearestCafes = useCallback(
+		throttle(getNearestCafesBase, 1000),
+		[]
+	);
 
 
 
