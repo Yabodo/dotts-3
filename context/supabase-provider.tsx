@@ -48,6 +48,13 @@ type SupabaseContextProps = {
 		distance: number;
 	}>>;
 	setUserCafeStatus: (cafeId: string | null, duration: number, latitude?: number | null, longitude?: number | null) => Promise<any>;
+	getUsersByLocation: (locationId: string) => Promise<Array<{
+		id: string;
+		name: string;
+		profilePicture?: string;
+		isReadyToTalk: boolean;
+		readyUntil?: string;
+	}>>;
 };
 
 type SupabaseProviderProps = {
@@ -75,6 +82,7 @@ export const SupabaseContext = createContext<SupabaseContextProps>({
 	incomingFriendRequests: async () => [],
 	getNearestCafes: async () => [],
 	setUserCafeStatus: async () => {},
+	getUsersByLocation: async () => [],
 });
 
 export const useSupabase = () => useContext(SupabaseContext);
@@ -224,6 +232,22 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
     }
     return [];
 };
+const getUsersByLocation = async (locationId: string) => {
+	const { data, error } = await supabase.rpc('get_users_by_location', {
+		location: locationId
+	});
+		if (error) {
+		console.error('Error fetching users by location:', error);
+		return [];
+	}
+		return data.map((user: any) => ({
+		id: user.id,
+		name: user.name,
+		profilePicture: user.profile_picture,
+		isReadyToTalk: user.is_ready_to_talk,
+		readyUntil: user.ready_until
+	}));
+};
 
 	const getProfile = async () => {
 		try {
@@ -364,6 +388,7 @@ const incomingFriendRequests = async () => {
 				fullFriendsList,
 				incomingFriendRequests,
 				setUserCafeStatus,
+				getUsersByLocation,
 			}}
 		>
 			{children}

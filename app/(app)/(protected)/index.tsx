@@ -39,14 +39,10 @@ export function UserProfile() {
 	}, [user]);
 
 	useEffect(() => {
-		setIsReady(profile?.is_ready_to_talk);
-		setNewUsername(profile?.name || "");
-	}, [profile]);
-
-	useEffect(() => {
-		if (!profile?.ready_until) return;
+		if (!profile?.location_id) return;
 		const checkAndClearCafe = async () => {
 			const timeLeft = calculateTimeLeft();
+			console.log(timeLeft)
 			if (timeLeft === null || timeLeft <= 0) {
 				await handleClearCafe();
 			}
@@ -54,7 +50,7 @@ export function UserProfile() {
 		const intervalId = setInterval(checkAndClearCafe, 60000);
 		checkAndClearCafe();
 		return () => clearInterval(intervalId);
-	}, [profile?.ready_until]);
+	}, [profile?.location_id]);
 
 	if (!profile) {
 		return <Text>Loading profile...</Text>;
@@ -63,6 +59,7 @@ export function UserProfile() {
 	const handleToggleAvailability = async () => {
 		setIsReady(!isReady);
 		await toggleAvailability();
+		await getProfile();
 	};
 
 	const handleUpdateUsername = async () => {
@@ -180,11 +177,12 @@ export function RealTimeLocation() {
 		})();
 	}, []);
 
-	let text = "Waiting..";
+	let text = "Loading..";
 	if (errorMsg) {
 		text = errorMsg;
 	} else if (location) {
-		text = `Latitude: ${location.latitude}, Longitude: ${location.longitude}`;
+		//text = `Latitude: ${location.latitude}, Longitude: ${location.longitude}`;
+		text = "";
 	}
 
 	return (
@@ -196,81 +194,7 @@ export function RealTimeLocation() {
 	);
 }
 
-export function FriendsList() {
-	const { fetchAvailableFriends, user } = useSupabase();
-	const [friends, setFriends] = useState([]);
-	const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
-
-	useEffect(() => {
-		const watchLocation = async () => {
-			let { status } = await Location.requestForegroundPermissionsAsync();
-			if (status !== "granted") {
-				return;
-			}
-			Location.watchPositionAsync(
-				{
-					accuracy: Location.Accuracy.High,
-					timeInterval: 5000,
-					distanceInterval: 5
-				},
-				(newLocation) => {
-					setLocation({
-						latitude: newLocation.coords.latitude,
-						longitude: newLocation.coords.longitude
-					});
-				}
-			);
-		};
-		watchLocation();
-	}, []);
-
-	useEffect(() => {
-		const loadFriends = async () => {
-			if (user && location?.latitude && location?.longitude) {
-				const friendsList = await fetchAvailableFriends(location.latitude, location.longitude);
-				setFriends(friendsList);
-			}
-		};
-
-		if (location?.latitude && location?.longitude) {
-			loadFriends();
-			const intervalId = setInterval(loadFriends, 5000);
-			return () => clearInterval(intervalId);
-		}
-	}, [user, location]);
-
-	const calculateTimeLeft = (readyUntil: string) => {
-		if (!readyUntil) return null;
-		const now = new Date();
-		const endTime = new Date(readyUntil);
-		const timeLeft = endTime.getTime() - now.getTime();
-		if (timeLeft <= 0) return null;
-		return Math.floor(timeLeft / 60000);
-	};
-
-	return (
-		<View>
-			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-				<H4 style={{ flex: 1 }}>Friends List</H4>
-				<Button variant="icon" onPress={() => router.push("search")}>
-					<Text>➕</Text>
-				</Button>
-			</View>
-			{friends.length < 1 ? (
-				<Text>No friends available</Text>
-			) : (
-				friends.map(friend => (
-					<View key={friend.id} className="flex-row items-center justify-between p-2 border border-gray-200 rounded mb-2">
-						<Text className="font-bold">{friend.name}</Text>
-						<Muted>{friend.cafe.name} | {calculateTimeLeft(friend.ready_until)}min</Muted>
-					</View>
-				))
-			)}
-		</View>
-	);
-}
-
-export function NearestCafes() {
+export function NearestCafes({ isReady }: { isReady: boolean }) {
 	const { getNearestCafes, setUserCafeStatus, getProfile, profile } = useSupabase();
 	const [cafes, setCafes] = useState<Array<{
 		id: string;
@@ -298,9 +222,10 @@ export function NearestCafes() {
 			if (status !== "granted") {
 				return;
 			}
+			console.log("test")
 			Location.watchPositionAsync(
 				{
-					accuracy: Location.Accuracy.High,
+					accuracy: Location.Accuracy.Highest,
 					timeInterval: 60000,
 					distanceInterval: 5
 				},
@@ -318,6 +243,7 @@ export function NearestCafes() {
 		const fetchCafes = async () => {
 			if (!location || hasActiveCafeSession()) return;
 			setLoading(true);
+			console.log("fetchCafes")
 			try {
 				const nearestCafes = await getNearestCafes(location.latitude, location.longitude);
 				setCafes(nearestCafes);
@@ -330,9 +256,11 @@ export function NearestCafes() {
 		if (location && !selectedCafe) {
 			fetchCafes();
 		}
-	}, [location, selectedCafe, profile?.ready_until, profile?.location_id]);
+		const intervalId = setInterval(fetchCafes, 3000);
+		return () => clearInterval(intervalId);
+	}, [location, selectedCafe, profile?.location_id]);
 
-	if (hasActiveCafeSession()) {
+	if (!isReady || hasActiveCafeSession()) {
 		return null;
 	}
 
@@ -385,6 +313,182 @@ export function NearestCafes() {
 	);
 }
 
+export function PeopleInCafe() {
+  const { getUsersByLocation, profile } = useSupabase();
+  const [users, setUsers] = useState<Array<{
+    id: string;  name: string;
+   profilePicture?: string;
+   isReadyToTalk: boolean;
+   readyUntil?: string;
+ }>>([]);
+ const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+   const loadUsers = async () => {
+     if (!profile?.location_id) return;
+     
+     try {
+       const cafeUsers = await getUsersByLocation(profile.location_id);
+       setUsers(cafeUsers);
+     } catch (error) {
+       console.error('Error fetching users in cafe:', error);
+     } finally {
+       setIsLoading(false);
+     }
+   };
+    if (profile?.location_id) {
+     loadUsers();
+     // Refresh the list every 5 seconds
+     const intervalId = setInterval(loadUsers, 5000);
+     return () => clearInterval(intervalId);
+   }
+ }, [profile?.location_id]);
+  if (isLoading) {
+   return (
+     <View>
+       <Text>Loading...</Text>
+     </View>
+   );
+ }
+  if (users.length === 0) {
+   return (
+     <View>
+       <Text>No one else is here yet</Text>
+     </View>
+   );
+ }
+  return (
+   <View>
+     {users.map(user => (
+       <View 
+         key={user.id} 
+         className="flex-row items-center justify-between p-2 border border-gray-200 rounded mb-2"
+       >
+         <Text className="font-bold">{user.name}</Text>
+       </View>
+     ))}
+   </View>
+ );
+}
+
+export function TabView() {
+	const { profile } = useSupabase();
+	const [activeTab, setActiveTab] = useState('friends');
+	
+	useEffect(() => {
+		if (!profile?.location_id) {
+			setActiveTab('friends');
+		}
+	}, [profile?.location_id]);
+
+	 // Only show cafe tab if user has an active cafe session
+	const showCafeTab = profile?.location_id && profile?.ready_until && new Date(profile.ready_until) > new Date();
+	return (
+		<View className="flex-1">
+			{/* Only show tabs if cafe tab is available */}
+			{showCafeTab && (
+				<View className="flex-row border-b border-gray-200 mb-4">
+					<TouchableOpacity 
+						onPress={() => setActiveTab('friends')}
+						className={`flex-1 p-3 ${activeTab === 'friends' ? 'border-b-2 border-primary' : ''}`}
+					>
+						<Text className={`text-center ${activeTab === 'friends' ? 'font-bold' : ''}`}>Friends</Text>
+					</TouchableOpacity>
+					<TouchableOpacity 
+						onPress={() => setActiveTab('cafe')}
+						className={`flex-1 p-3 ${activeTab === 'cafe' ? 'border-b-2 border-primary' : ''}`}
+					>
+						<Text className={`text-center ${activeTab === 'cafe' ? 'font-bold' : ''}`}>People Here</Text>
+					</TouchableOpacity>
+				</View>
+			)}
+			
+			{activeTab === 'friends' ? (
+				<FriendsList />
+			) : (
+				<PeopleInCafe />
+			)}
+		</View>
+	);
+}
+
+export function FriendsList() {
+	const { fetchAvailableFriends, user } = useSupabase();
+	const [friends, setFriends] = useState([]);
+	const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const watchLocation = async () => {
+			let { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== "granted") {
+				return;
+			}
+			Location.watchPositionAsync(
+				{
+					accuracy: Location.Accuracy.Highest,
+					timeInterval: 5000,
+					distanceInterval: 5
+				},
+				(newLocation) => {
+					setLocation({
+						latitude: newLocation.coords.latitude,
+						longitude: newLocation.coords.longitude
+					});
+				}
+			);
+		};
+		watchLocation();
+	}, []);
+
+	useEffect(() => {
+		const loadFriends = async () => {
+			if (user && location?.latitude && location?.longitude) {
+				const friendsList = await fetchAvailableFriends(location.latitude, location.longitude);
+				setFriends(friendsList);
+				setIsLoading(false);
+			}
+		};
+
+		if (location?.latitude && location?.longitude) {
+			loadFriends();
+			const intervalId = setInterval(loadFriends, 5000);
+			return () => clearInterval(intervalId);
+		}
+	}, [user, location]);
+
+	const calculateTimeLeft = (readyUntil: string) => {
+		if (!readyUntil) return null;
+		const now = new Date();
+		const endTime = new Date(readyUntil);
+		const timeLeft = endTime.getTime() - now.getTime();
+		if (timeLeft <= 0) return null;
+		return Math.floor(timeLeft / 60000);
+	};
+
+	return (
+		<View>
+			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+				<H4 style={{ flex: 1 }}>Friends List</H4>
+				<Button variant="icon" onPress={() => router.push("search")}>
+					<Text>➕</Text>
+				</Button>
+			</View>
+			{isLoading ? (
+       <Text>Loading...</Text>
+     ) : friends.length < 1 ? (
+       <Text>No friends available</Text>
+     ) : (
+			friends.map(friend => (
+				<View key={friend.id} className="flex-row items-center justify-between p-2 border border-gray-200 rounded mb-2">
+					<Text className="font-bold">{friend.name}</Text>
+					<Muted>{friend.cafe.name} | {calculateTimeLeft(friend.ready_until)}min</Muted>
+				</View>
+			))
+     )}
+		</View>
+	);
+}
+
 export default function Home() {
   const [isLocationGranted, setIsLocationGranted] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -430,17 +534,8 @@ export default function Home() {
   }, [user]);
 
   const isAppReady = () => {
-    if (!user) return false;
-    if (!profile) return false;
-    
-    const hasActiveCafeSession = () => {
-      if (!profile.ready_until) return false;
-      const now = new Date();
-      const readyUntil = new Date(profile.ready_until);
-      return readyUntil > now;
-    };
-    return location !== null || hasActiveCafeSession();
-  };
+		return !!user && !!profile;
+	};
 
   useEffect(() => {
     if (isAppReady()) {
@@ -469,11 +564,11 @@ export default function Home() {
   }
 
   return (
-    <View className="flex-1 justify-center bg-background p-4 gap-y-4">
-      <UserProfile />
-      <RealTimeLocation />
-      <NearestCafes />
-      <FriendsList />
+    <View className="flex-1 justify-center bg-background p-4 pt-12 gap-y-4">
+			<UserProfile />
+			<RealTimeLocation />
+			{profile?.is_ready_to_talk && <NearestCafes isReady={profile.is_ready_to_talk} />}
+			<TabView />
     </View>
   );
 }

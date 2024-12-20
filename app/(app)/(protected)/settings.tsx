@@ -12,7 +12,7 @@ export default function Settings() {
 		<View className="flex-1 items-center justify-center bg-background p-4 gap-y-4">
 			<H1 className="text-center">Sign Out</H1>
 			<Muted className="text-center">
-				Sign out and bye bye!
+				Bye bye!
 			</Muted>
 			<Button
 				className="w-full"
