@@ -125,7 +125,6 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 
 
 	const getNearestCafesBase = async (latitude: number, longitude: number) => {
-		console.log("get_nearest_cafes");
 		const { data, error } = await supabase.rpc('get_nearest_cafes', {
 			latitude: latitude,
 			longitude: longitude,
@@ -136,9 +135,8 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 		}
 		return data;
 	};
-	 // Throttle to maximum one call per second
 	const getNearestCafes = useCallback(
-		throttle(getNearestCafesBase, 1000),
+		throttle(getNearestCafesBase, 3000),
 		[]
 	);
 

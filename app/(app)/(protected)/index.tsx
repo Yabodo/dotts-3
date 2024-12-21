@@ -42,12 +42,11 @@ export function UserProfile() {
 		if (!profile?.location_id) return;
 		const checkAndClearCafe = async () => {
 			const timeLeft = calculateTimeLeft();
-			console.log(timeLeft)
 			if (timeLeft === null || timeLeft <= 0) {
 				await handleClearCafe();
 			}
 		};
-		const intervalId = setInterval(checkAndClearCafe, 60000);
+		const intervalId = setInterval(checkAndClearCafe, 30000);
 		checkAndClearCafe();
 		return () => clearInterval(intervalId);
 	}, [profile?.location_id]);
@@ -222,7 +221,6 @@ export function NearestCafes({ isReady }: { isReady: boolean }) {
 			if (status !== "granted") {
 				return;
 			}
-			console.log("test")
 			Location.watchPositionAsync(
 				{
 					accuracy: Location.Accuracy.Highest,
@@ -243,7 +241,6 @@ export function NearestCafes({ isReady }: { isReady: boolean }) {
 		const fetchCafes = async () => {
 			if (!location || hasActiveCafeSession()) return;
 			setLoading(true);
-			console.log("fetchCafes")
 			try {
 				const nearestCafes = await getNearestCafes(location.latitude, location.longitude);
 				setCafes(nearestCafes);
@@ -256,7 +253,7 @@ export function NearestCafes({ isReady }: { isReady: boolean }) {
 		if (location && !selectedCafe) {
 			fetchCafes();
 		}
-		const intervalId = setInterval(fetchCafes, 3000);
+		const intervalId = setInterval(fetchCafes, 5000);
 		return () => clearInterval(intervalId);
 	}, [location, selectedCafe, profile?.location_id]);
 
@@ -499,7 +496,6 @@ export default function Home() {
     const checkLocationPermission = async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
-        console.log('Location permission status:', status);
         setIsLocationGranted(status === "granted");
         
         if (status === "granted") {
@@ -510,7 +506,6 @@ export default function Home() {
               distanceInterval: 5
             },
             (newLocation) => {
-              console.log('New location received:', newLocation);
               setLocation(newLocation.coords);
             }
           );
@@ -526,7 +521,6 @@ export default function Home() {
   useEffect(() => {
     const loadProfile = async () => {
       if (user) {
-        console.log('Loading profile for user:', user.id);
         await getProfile();
       }
     };
